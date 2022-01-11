@@ -14,6 +14,7 @@ type MigrateCubeService interface {
 
 type UHostService interface {
 	BindEIPToUHost(uhostId, eipId string) error
+	UnBindEIPToUHost(uhostId, eipId string) error
 	CreateUHost(config *conf.UHostConfig, maxCount int) ([]string, error)
 	DescribeUHostById(uhostId string) (*uhost.UHostInstanceSet, error)
 }

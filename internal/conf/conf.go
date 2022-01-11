@@ -18,6 +18,12 @@ type Log struct {
 
 type Migrate struct {
 	BasicConfig
+	ServiceValidation *ServiceValidation `json:"service_validation"`
+}
+
+type ServiceValidation struct {
+	Port                    int `json:"port" validate:"required"`
+	WaitServiceReadyTimeout int `json:"wait_service_ready_timeout" validate:"required"`
 }
 
 type BasicConfig struct {

@@ -28,6 +28,10 @@
       "cube_id_filter": {
         "zone": "hk-02"
       }
+    },
+    "service_validation": {
+      "port": 22,
+      "wait_service_ready_timeout": 120
     }
   }
 }

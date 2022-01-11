@@ -6,16 +6,19 @@ The Process about:
 - Waiting for UHost Running
 - Unbind one of the queried Cube with EIP and then bind EIP to UHost
 - Repeat the previous step
+- [Option]Running tcp validation about UHost service.
+- [Option]RollBack the EIP to Cube When migrate got error.
 
 ## Installation
 
 - Go 1.16
 - You have installed git and golang on your platform, you can fetch the source code from GitHub and compile it by yourself.
 
-```
+```bash
 git clone https://github.com/shawnmssu/migrate.git
 cd migrate
-make install
+make linux # search one system
+./bin/migrate --help
 ```
 
 ## Use
@@ -65,6 +68,10 @@ migrate --conf configs/config.json
       "cube_id_filter": {
         "zone": "hk-02"
       }
+    },
+    "service_validation": {
+      "port": 22,
+      "wait_service_ready_timeout": 120
     }
   }
 }

@@ -24,6 +24,19 @@ func (client *UCloudClient) BindEIPToUHost(uhostId, eipId string) error {
 	return nil
 }
 
+func (client *UCloudClient) UnBindEIPToUHost(uhostId, eipId string) error {
+	req := client.UNetConn.NewUnBindEIPRequest()
+	req.EIPId = ucloud.String(eipId)
+	req.ResourceId = ucloud.String(uhostId)
+	req.ResourceType = ucloud.String("uhost")
+
+	_, err := client.UNetConn.UnBindEIP(req)
+	if err != nil {
+		return errors.NewAPIRequestFailedError(err)
+	}
+	return nil
+}
+
 func (client *UCloudClient) CreateUHost(config *conf.UHostConfig, maxCount int) ([]string, error) {
 	if maxCount == 0 {
 		return nil, errors.NewConfigValidateFailedError(fmt.Errorf("got zero max count about `CreateUHostInstance`"))

@@ -14,7 +14,7 @@ func InitLogger(config *conf.Log) error {
 	var err error
 	var level zapcore.Level
 	if config == nil {
-		configStr := zap.NewDevelopmentConfig()
+		configStr := zap.NewProductionConfig()
 		configStr.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
 		Logger, err = configStr.Build()
 		if err != nil {
@@ -55,7 +55,7 @@ func InitLogger(config *conf.Log) error {
 		)
 		Logger = zap.New(core)
 	} else {
-		configStr := zap.NewDevelopmentConfig()
+		configStr := zap.NewProductionConfig()
 		configStr.Level = zap.NewAtomicLevelAt(level)
 		Logger, err = configStr.Build()
 		if err != nil {
@@ -64,7 +64,7 @@ func InitLogger(config *conf.Log) error {
 	}
 
 	defer func() {
-		Logger.Sync()
+		_ = Logger.Sync()
 	}()
 
 	return nil

@@ -10,6 +10,8 @@ import (
 	"github.com/ucloud/migrate/internal/service"
 	"github.com/ucloud/migrate/internal/utils"
 	"github.com/ucloud/migrate/internal/utils/retry"
+	"net"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -46,22 +48,34 @@ func (app *MigrateApp) migrate(migrateService service.MigrateCubeService) error 
 		return err
 	}
 
-	cubeIPMap := make(map[string][]string)
+	type ipInfo struct {
+		ip    string
+		eipId string
+	}
+	cubeIPMap := make(map[string][]ipInfo)
 	cubeIdList := make([]string, 0)
-	allEipList := make([]string, 0)
+	allIpList := make([]string, 0)
 	for _, info := range cubeInfos {
-		eipIdList := make([]string, 0)
+		ipList := make([]string, 0)
+		ipInfoList := make([]ipInfo, 0)
 		if info.Eip != nil && len(info.Eip) > 0 {
 			for _, eip := range info.Eip {
-				eipIdList = append(eipIdList, eip.EIPId)
+				ipList = append(ipList, eip.EIPAddr[0].IP)
+				ipInfoList = append(ipInfoList, ipInfo{
+					ip:    eip.EIPAddr[0].IP,
+					eipId: eip.EIPId,
+				})
 			}
 			cubeIdList = append(cubeIdList, info.CubeId)
-			cubeIPMap[info.CubeId] = eipIdList
-			allEipList = append(allEipList, eipIdList...)
+			cubeIPMap[info.CubeId] = ipInfoList
+			allIpList = append(allIpList, ipList...)
 		}
 	}
+	if len(cubeIPMap) == 0 {
+		return fmt.Errorf("got empty Cube list with external IP")
+	}
 
-	log.Logger.Sugar().Infof("[Start CreateUHost] for the Cube EIP List %v", allEipList)
+	log.Logger.Sugar().Infof("[Start CreateUHost] for the Cube external IP List %v", allIpList)
 	var allUHostIds []string
 	count := len(cubeIPMap) / 10
 	if count > 1 {
@@ -160,37 +174,79 @@ func (app *MigrateApp) migrate(migrateService service.MigrateCubeService) error 
 		return fmt.Errorf("[Waiting for UHost Running] got no one uhost to be Running about the config, %v", app.Config.Migrate.UHostConfig)
 	}
 
+	// wait for service start on UHost
+	time.Sleep(10 * time.Second)
+
 	log.Logger.Sugar().Infof("[Start Migrate], %v", availableUHostIds)
 	successfulIps := make([]string, 0)
 	for i := 0; i < len(availableUHostIds); i++ {
-		for _, ip := range cubeIPMap[cubeIdList[i]] {
-			if err = migrateService.UnBindEIPToCube(cubeIdList[i], ip); err != nil {
-				log.Logger.Sugar().Warnf("[UnBindEIPToCube] about cubeId[%s] and ip[%s] got error, %s", cubeIdList[i], ip, err)
+		for _, info := range cubeIPMap[cubeIdList[i]] {
+			log.Logger.Sugar().Infof("[UnBindEIPToCube] about cubeId[%s] and ip[%s:%s]", cubeIdList[i], info.eipId, info.ip)
+			if err = migrateService.UnBindEIPToCube(cubeIdList[i], info.eipId); err != nil {
+				log.Logger.Sugar().Warnf("[UnBindEIPToCube] about cubeId[%s] and ip[%s:%s] got error, %s", cubeIdList[i], info.eipId, info.ip, err)
 				continue
 			}
 
-			log.Logger.Sugar().Infof("[UnBindEIPToCube] about cubeId[%s] and ip[%s] complete", cubeIdList[i], ip)
+			log.Logger.Sugar().Infof("[BindEIPToUHost] about uhostId[%s] and ip[%s:%s]", availableUHostIds[i], info.eipId, info.ip)
+			if err = migrateService.BindEIPToUHost(availableUHostIds[i], info.eipId); err != nil {
+				log.Logger.Sugar().Warnf("[BindEIPToUHost] about uhostId[%s] and ip[%s:%s] got error, %s", availableUHostIds[i], info.eipId, info.ip, err)
 
-			if err = migrateService.BindEIPToUHost(availableUHostIds[i], ip); err != nil {
-				log.Logger.Sugar().Warnf("[BindEIPToUHost] about uhostId[%s] and ip[%s] got error, %s", availableUHostIds[i], ip, err)
-				if err = migrateService.BindEIPToCube(cubeIdList[i], ip); err != nil {
-					log.Logger.Sugar().Errorf("[BindEIPToCube] about cubeId[%s] and ip[%s] got error, %s", cubeIdList[i], ip, err)
-					return fmt.Errorf("[BindEIPToCube] about cubeId[%s] and ip[%s] got error, %s", cubeIdList[i], ip, err)
-				} else {
-					log.Logger.Sugar().Infof("[ReBindEIPToCube] about cubeId[%s] and ip[%s] complete", cubeIdList[i], ip)
+				log.Logger.Sugar().Infof("[ReBindEIPToCube] about cubeId[%s] and ip[%s:%s]", cubeIdList[i], info.eipId, info.ip)
+				if err = migrateService.BindEIPToCube(cubeIdList[i], info.eipId); err != nil {
+					return fmt.Errorf("[ReBindEIPToCube] about cubeId[%s] and ip[%s:%s] got error, %s", cubeIdList[i], info.eipId, info.ip, err)
 				}
 			} else {
-				log.Logger.Sugar().Infof("[BindEIPToUHost] about uhostId[%s] and ip[%s] complete", availableUHostIds[i], ip)
-				successfulIps = append(successfulIps, ip)
+				if app.Config.Migrate.ServiceValidation != nil && app.Config.Migrate.ServiceValidation.Port != 0 {
+					log.Logger.Sugar().Infof("[Waiting For UHost Server Running] about uhostId[%s], ip[%s:%s], port[%d]",
+						availableUHostIds[i], info.eipId, info.ip, app.Config.Migrate.ServiceValidation.Port)
+
+					timeout := app.Config.Migrate.ServiceValidation.WaitServiceReadyTimeout
+					if timeout == 0 {
+						timeout = 120
+					}
+					err = retry.Config{
+						StartTimeout: time.Duration(timeout) * time.Second,
+						ShouldRetry: func(err error) bool {
+							return errors.IsNotCompleteError(err)
+						},
+						RetryDelay: (&retry.Backoff{InitialBackoff: 2 * time.Second, MaxBackoff: 6 * time.Second, Multiplier: 2}).Linear,
+					}.Run(ctx, func(ctx context.Context) error {
+						var conn net.Conn
+						conn, err = net.DialTimeout("tcp", info.ip+":"+strconv.Itoa(app.Config.Migrate.ServiceValidation.Port), 3*time.Second)
+						if err != nil {
+							return errors.NewNotCompletedError(err)
+						}
+
+						return conn.Close()
+					})
+
+					if err != nil {
+						log.Logger.Sugar().Warnf("[Waiting For UHost Server Port Running] about uhostId[%s], ip[%s:%s], port[%d] got error, %s",
+							availableUHostIds[i], info.eipId, info.ip, app.Config.Migrate.ServiceValidation.Port, err)
+
+						log.Logger.Sugar().Infof("[UnBindEIPToUHost] about uhostId[%s] and ip[%s:%s]", availableUHostIds[i], info.eipId, info.ip)
+						if err = migrateService.UnBindEIPToUHost(availableUHostIds[i], info.eipId); err != nil {
+							return fmt.Errorf("[UnBindEIPToUHost] about uhostId[%s] and ip[%s:%s] got error, %s", availableUHostIds[i], info.eipId, info.ip, err)
+						}
+
+						log.Logger.Sugar().Infof("[ReBindEIPToCube] about cubeId[%s] and ip[%s:%s]", cubeIdList[i], info.eipId, info.ip)
+						if err = migrateService.BindEIPToCube(cubeIdList[i], info.eipId); err != nil {
+							return fmt.Errorf("[ReBindEIPToCube] about cubeId[%s] and ip[%s:%s] got error, %s", cubeIdList[i], info.eipId, info.ip, err)
+						}
+					}
+				}
+
+				log.Logger.Sugar().Infof("[Migrate One IP Successful] about uhostId[%s] and ip[%s:%s]", availableUHostIds[i], info.eipId, info.ip)
+				successfulIps = append(successfulIps, info.ip)
 			}
 		}
 	}
 
-	differSlice := utils.DifferenceSlice(allEipList, successfulIps)
-	log.Logger.Sugar().Infof("[Successful Migrate] Want Migrate the EIP List: [%d]%v, "+
-		"Successful about EIP List: [%d]%v, "+
-		"Unsuccessful EIP List: [%d]%v",
-		len(allEipList), allEipList, len(successfulIps), successfulIps, len(differSlice), differSlice)
+	differSlice := utils.DifferenceSlice(allIpList, successfulIps)
+	log.Logger.Sugar().Infof("[All Migrate Successful] Want Migrate the EIP List: (%d)%v,"+
+		"[Successful] about external IP List: (%d)%v,"+
+		"[Unsuccessful] external IP List: (%d)%v",
+		len(allIpList), allIpList, len(successfulIps), successfulIps, len(differSlice), differSlice)
 
 	return nil
 
