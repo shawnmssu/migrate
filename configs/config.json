@@ -1,0 +1,33 @@
+{
+  "region": "hk",
+  "migrate": {
+    "uhost_config": {
+      "zone":  "hk-02",
+      "image_id_filter":  {
+        "os_type": "Linux",
+        "image_type": "Base",
+        "most_recent": true
+      },
+      "name_prefix":  "Test-migrate",
+      "password": "ucloud_2022",
+      "charge_type":  "Dynamic",
+      "cpu":  1,
+      "memory": 1024,
+      "tag":  "migrate",
+      "minimal_cpu_platform": "Amd/Auto",
+      "machine_type":  "OM",
+      "disks": [
+        {
+          "is_boot": "True",
+          "size": 20,
+          "type": "CLOUD_RSSD"
+        }
+      ]
+    },
+    "cube_config": {
+      "cube_id_filter": {
+        "zone": "hk-02"
+      }
+    }
+  }
+}
