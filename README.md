@@ -65,3 +65,11 @@ migrate --conf configs/config.json
 }
 ```
 
+## Warning
+
+The migrate tool not support distributed consistency service. Therefore, we need to ensure that the CLI can be executed completely without interruption. 
+If the interruption leads to the unbinding of the EIP, you can query the log and manually bind it, which will cause the service provided by the one IP to be unavailable.
+There into, you can use [UCloud CLI](https://docs.ucloud.cn/cli/README) cmd to band eip.
+```shell
+ucloud eip bind --eip-id "xxx" --resource-type "cube" --resource-id "xxx"
+```

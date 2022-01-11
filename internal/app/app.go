@@ -81,11 +81,6 @@ func (app *MigrateApp) migrate(migrateService service.MigrateCubeService) error 
 					log.Logger.Sugar().Warnf("[CreateUHost] got error, %s", err)
 					return
 				}
-				if len(ids) < maxCount {
-					log.Logger.Sugar().Warnf("[CreateUHost] not created expected count UHost, " +
-						"please check the specific UHost quota")
-					return
-				}
 
 				lock.Lock()
 				allUHostIds = append(allUHostIds, ids...)
@@ -96,12 +91,16 @@ func (app *MigrateApp) migrate(migrateService service.MigrateCubeService) error 
 	} else {
 		allUHostIds, err = migrateService.CreateUHost(app.Config.Migrate.UHostConfig, len(cubeIPMap))
 		if err != nil {
-			return err
+			return fmt.Errorf("[CreateUHost] got error, %s", err)
 		}
 	}
 
 	if len(allUHostIds) == 0 {
 		return fmt.Errorf("[CreateUHost] got no one uhost can be created about the config, %v", *app.Config.Migrate.UHostConfig)
+	}
+	if len(allUHostIds) < len(cubeIPMap) {
+		log.Logger.Sugar().Warnf("[CreateUHost] not created expected count UHost, " +
+			"please check the specific UHost quota")
 	}
 
 	log.Logger.Sugar().Infof("[Waiting for UHost Running], %v", allUHostIds)
