@@ -6,7 +6,7 @@ package retry
 import (
 	"context"
 	"fmt"
-	"log"
+	"github.com/ucloud/migrate/internal/log"
 	"time"
 )
 
@@ -75,7 +75,7 @@ func (cfg Config) Run(ctx context.Context, fn func(context.Context) error) error
 			return err
 		}
 
-		log.Print(fmt.Errorf("Retryable: %s", err))
+		log.Logger.Sugar().Debugf("Retryable: %s", err)
 
 		select {
 		case <-ctx.Done():

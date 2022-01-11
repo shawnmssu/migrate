@@ -169,13 +169,19 @@ func (app *MigrateApp) migrate(migrateService service.MigrateCubeService) error 
 				log.Logger.Sugar().Warnf("[UnBindEIPToCube] about cubeId[%s] and ip[%s] got error, %s", cubeIdList[i], ip, err)
 				continue
 			}
+
+			log.Logger.Sugar().Infof("[UnBindEIPToCube] about cubeId[%s] and ip[%s] complete", cubeIdList[i], ip)
+
 			if err = migrateService.BindEIPToUHost(availableUHostIds[i], ip); err != nil {
 				log.Logger.Sugar().Warnf("[BindEIPToUHost] about uhostId[%s] and ip[%s] got error, %s", availableUHostIds[i], ip, err)
 				if err = migrateService.BindEIPToCube(cubeIdList[i], ip); err != nil {
 					log.Logger.Sugar().Errorf("[BindEIPToCube] about cubeId[%s] and ip[%s] got error, %s", cubeIdList[i], ip, err)
 					return fmt.Errorf("[BindEIPToCube] about cubeId[%s] and ip[%s] got error, %s", cubeIdList[i], ip, err)
+				}else {
+					log.Logger.Sugar().Infof("[ReBindEIPToCube] about cubeId[%s] and ip[%s] complete", cubeIdList[i], ip)
 				}
 			} else {
+				log.Logger.Sugar().Infof("[BindEIPToUHost] about uhostId[%s] and ip[%s] complete", availableUHostIds[i], ip)
 				successfulIps = append(successfulIps, ip)
 			}
 		}
