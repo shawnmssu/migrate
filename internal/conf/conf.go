@@ -18,12 +18,6 @@ type Log struct {
 
 type Migrate struct {
 	BasicConfig
-	ApplyNewIP        bool               `json:"apply_new_ip"`
-	ServiceValidation *ServiceValidation `json:"service_validation"`
-}
-
-type ServiceValidation struct {
-	Port int `json:"port"`
 }
 
 type BasicConfig struct {

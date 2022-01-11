@@ -21,7 +21,11 @@ migrate --conf configs/config.json
 
 ## Config
 
-You may refer to [CreateUHostInstance](https://docs.ucloud.cn/api/uhost-api/create_uhost_instance) and [ListCubePod](https://docs.ucloud.cn/api/cube-api/list_cube_pod), for example:
+- You may refer to the [API Docs](https://docs.ucloud.cn/api):
+  - [CreateUHostInstance](https://docs.ucloud.cn/api/uhost-api/create_uhost_instance)
+  - [DescribeImage](https://docs.ucloud.cn/api/uhost-api/describe_image)
+  - [ListCubePod](https://docs.ucloud.cn/api/cube-api/list_cube_pod)
+- for example:
 ```json
 {
   "public_key": "xxx",

@@ -177,7 +177,7 @@ func (app *MigrateApp) migrate(migrateService service.MigrateCubeService) error 
 				if err = migrateService.BindEIPToCube(cubeIdList[i], ip); err != nil {
 					log.Logger.Sugar().Errorf("[BindEIPToCube] about cubeId[%s] and ip[%s] got error, %s", cubeIdList[i], ip, err)
 					return fmt.Errorf("[BindEIPToCube] about cubeId[%s] and ip[%s] got error, %s", cubeIdList[i], ip, err)
-				}else {
+				} else {
 					log.Logger.Sugar().Infof("[ReBindEIPToCube] about cubeId[%s] and ip[%s] complete", cubeIdList[i], ip)
 				}
 			} else {
