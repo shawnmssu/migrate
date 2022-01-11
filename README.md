@@ -1,6 +1,11 @@
 # Migrate
 
-Migrate CLI provides a unified command line interface for migrating Cube instances to UHost instances at the present.
+Migrate CLI provides a unified command line interface for migrating Cube instances to UHost instances at the present. 
+The Process about:
+- Create UHost List (Default: Shared Outstanding UHost)
+- Waiting for UHost Running
+- Unbind one of the queried Cube with EIP and then bind EIP to UHost
+- Repeat the previous step
 
 ## Installation
 
