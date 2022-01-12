@@ -17,8 +17,8 @@ The Process about:
 ```bash
 git clone https://github.com/shawnmssu/migrate.git
 cd migrate
-make linux # search one system
-./bin/migrate --help
+make install # or search one system and use ./bin/migrate --help
+migrate --help
 ```
 
 ## Use

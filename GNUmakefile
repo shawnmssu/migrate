@@ -21,8 +21,9 @@ clean:
 
 
 install:
-	go build go build -o bin/ ./...
+	go build -o bin/ ./...
 	chmod +x bin/migrate
+	cp bin/migrate /usr/local/bin
 
 mac:
 	GOOS=darwin GOARCH=amd64 go build -o bin/ ./...
