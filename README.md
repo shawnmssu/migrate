@@ -11,13 +11,21 @@ The Process about:
 
 ## Installation
 
+**You can install by [release](https://github.com/shawnmssu/migrate/releases)**
+- download release
+- decompress release, for example:
+```shell
+tar zxvf migrate_0.0.1_linux-amd64.tgz
+```
+
+**Building from source(Recommended if you have golang installed)**
 - Go 1.16
 - You have installed git and golang on your platform, you can fetch the source code from GitHub and compile it by yourself.
 
 ```bash
 git clone https://github.com/shawnmssu/migrate.git
 cd migrate
-make install # or search one system and use ./bin/migrate --help
+make install
 migrate --help
 ```
 
