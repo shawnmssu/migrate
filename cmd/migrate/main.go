@@ -84,7 +84,12 @@ func main() {
 		return
 	}
 
-	migrateApp := app.NewMigrateApp(bc)
+	migrateApp := new(app.MigrateApp)
+	migrateApp, err = app.InitMigrateApp(bc)
+	if err != nil {
+		fmt.Printf("init Migrate App got error, %s\n", err)
+		return
+	}
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)

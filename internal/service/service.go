@@ -4,7 +4,6 @@ import (
 	"github.com/ucloud/migrate/internal/client"
 	"github.com/ucloud/migrate/internal/conf"
 	"github.com/ucloud/ucloud-sdk-go/services/cube"
-	"github.com/ucloud/ucloud-sdk-go/services/uhost"
 )
 
 type MigrateCubeService interface {
@@ -13,10 +12,10 @@ type MigrateCubeService interface {
 }
 
 type UHostService interface {
-	BindEIPToUHost(uhostId, eipId string) error
-	UnBindEIPToUHost(uhostId, eipId string) error
-	CreateUHost(config *conf.UHostConfig, maxCount int) ([]string, error)
-	DescribeUHostById(uhostId string) (*uhost.UHostInstanceSet, error)
+	BindEIPToUHost(uHostId, eipId string) error
+	UnBindEIPToUHost(uHostId, eipId string) error
+	CreateUHost(config *conf.UHostConfig, count int) ([]string, error)
+	WaitingForUHostRunning(uHostIds []string) ([]string, error)
 }
 
 type Cube interface {

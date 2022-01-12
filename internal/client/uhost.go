@@ -1,14 +1,20 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"github.com/ucloud/migrate/internal/conf"
 	"github.com/ucloud/migrate/internal/errors"
+	"github.com/ucloud/migrate/internal/log"
 	"github.com/ucloud/migrate/internal/utils"
+	"github.com/ucloud/migrate/internal/utils/retry"
 	"github.com/ucloud/ucloud-sdk-go/services/uhost"
 	"github.com/ucloud/ucloud-sdk-go/ucloud"
 	"regexp"
 	"sort"
+	"strings"
+	"sync"
+	"time"
 )
 
 func (client *UCloudClient) BindEIPToUHost(uhostId, eipId string) error {
@@ -37,7 +43,50 @@ func (client *UCloudClient) UnBindEIPToUHost(uhostId, eipId string) error {
 	return nil
 }
 
-func (client *UCloudClient) CreateUHost(config *conf.UHostConfig, maxCount int) ([]string, error) {
+func (client *UCloudClient) CreateUHost(config *conf.UHostConfig, count int) ([]string, error) {
+	var allUHostIds []string
+	for i := 0; i <= count/10; i++ {
+		groupCount := 10
+		if i == count/10 {
+			if count%10 > 0 {
+				groupCount = count % 10
+			} else {
+				break
+			}
+		}
+		uHostIds := client.createUHostInstanceGroup(config, groupCount)
+		allUHostIds = append(allUHostIds, uHostIds...)
+	}
+
+	return allUHostIds, nil
+}
+
+func (client *UCloudClient) createUHostInstanceGroup(config *conf.UHostConfig, groupCount int) []string {
+	var wg sync.WaitGroup
+	var lock sync.Mutex
+	var err error
+	var uHostIds []string
+	for i := 0; i < groupCount; i++ {
+		wg.Add(1)
+		go func(config *conf.UHostConfig) {
+			defer wg.Done()
+			var ids []string
+			ids, err = client.createUHostInstance(config, 1)
+			if err != nil {
+				log.Logger.Sugar().Warnf("[CreateUHost] got error, %s", err)
+				return
+			}
+
+			lock.Lock()
+			uHostIds = append(uHostIds, ids...)
+			lock.Unlock()
+		}(config)
+	}
+	wg.Wait()
+	return uHostIds
+}
+
+func (client *UCloudClient) createUHostInstance(config *conf.UHostConfig, maxCount int) ([]string, error) {
 	if maxCount == 0 {
 		return nil, errors.NewConfigValidateFailedError(fmt.Errorf("got zero max count about `CreateUHostInstance`"))
 	}
@@ -229,7 +278,7 @@ func (client *UCloudClient) filterImageId(filter *conf.ImageIdFilter) (string, e
 	return finalImages[0].ImageId, nil
 }
 
-func (client *UCloudClient) DescribeUHostById(uhostId string) (*uhost.UHostInstanceSet, error) {
+func (client *UCloudClient) describeUHostById(uhostId string) (*uhost.UHostInstanceSet, error) {
 	req := client.UHostConn.NewDescribeUHostInstanceRequest()
 	req.UHostIds = []string{uhostId}
 
@@ -242,4 +291,58 @@ func (client *UCloudClient) DescribeUHostById(uhostId string) (*uhost.UHostInsta
 	}
 
 	return &resp.UHostSet[0], nil
+}
+
+func (client *UCloudClient) WaitingForUHostRunning(uHostIds []string) ([]string, error) {
+	expectedUHostIds := map[string]struct{}{}
+	for _, id := range uHostIds {
+		expectedUHostIds[id] = struct{}{}
+	}
+	runningUHostIds := make([]string, 0)
+	ctx := context.TODO()
+	err := retry.Config{
+		Tries: 10,
+		ShouldRetry: func(err error) bool {
+			return errors.IsNotCompleteError(err)
+		},
+		RetryDelay: (&retry.Backoff{InitialBackoff: 2 * time.Second, MaxBackoff: 6 * time.Second, Multiplier: 10}).Linear,
+	}.Run(ctx, func(ctx context.Context) error {
+		for uhostId := range expectedUHostIds {
+			inst, err := client.describeUHostById(uhostId)
+			if err != nil {
+				return err
+			}
+
+			if inst.State == "Running" {
+				delete(expectedUHostIds, uhostId)
+				runningUHostIds = append(runningUHostIds, uhostId)
+				continue
+			}
+
+			if inst.State == "Install Fail" {
+				delete(expectedUHostIds, uhostId)
+				log.Logger.Sugar().Warnf("Install UHost %s failed", uhostId)
+				continue
+			}
+		}
+
+		if len(expectedUHostIds) != 0 {
+			keys := make([]string, len(expectedUHostIds))
+			for k := range expectedUHostIds {
+				keys = append(keys, k)
+			}
+			return errors.NewNotCompletedError(fmt.Errorf("waiting uhost %v running", keys))
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		var s []string
+		for v := range expectedUHostIds {
+			s = append(s, v)
+		}
+		return nil, fmt.Errorf("[Waiting for UHost Running] about uhostIds: %q got error, %s", strings.Join(s, ","), err)
+	}
+	return runningUHostIds, nil
 }
