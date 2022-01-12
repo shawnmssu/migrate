@@ -114,7 +114,7 @@ func (client *UCloudClient) GetCubeCubePodExtendInfoList(config *conf.CubeConfig
 
 func (client *UCloudClient) filterCubeIdList(filter *conf.CubeIdFilter) ([]string, error) {
 	if filter == nil {
-		return nil, fmt.Errorf("empty filter")
+		return nil, fmt.Errorf("empty cube id filter")
 	}
 	req := client.CubeConn.NewListCubePodRequest()
 	if len(filter.Zone) > 0 {
@@ -130,7 +130,7 @@ func (client *UCloudClient) filterCubeIdList(filter *conf.CubeIdFilter) ([]strin
 		req.VPCId = ucloud.String(filter.VPCId)
 	}
 	if len(filter.SubnetId) > 0 {
-		req.DeploymentId = ucloud.String(filter.SubnetId)
+		req.SubnetId = ucloud.String(filter.SubnetId)
 	}
 
 	var idList []string
