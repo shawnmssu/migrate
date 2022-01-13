@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -53,4 +54,24 @@ func IntersectSlice(slice1, slice2 []string) []string {
 		}
 	}
 	return nn
+}
+
+func CheckError(err error) {
+	if err != nil {
+		fmt.Println("[ERROR]", err)
+	}
+}
+
+func CheckErrorWithCode(err error) {
+	if err != nil {
+		fmt.Println("[ERROR]", err)
+		os.Exit(1)
+	}
+}
+
+func MustExists(path string) bool {
+	if _, err := os.Stat(path); err != nil {
+		return false
+	}
+	return true
 }

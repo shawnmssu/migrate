@@ -63,7 +63,7 @@ func (client *UCloudClient) BindEIPToCube(cubeId, eipId string) error {
 	return nil
 }
 
-func (client *UCloudClient) GetCubeCubePodExtendInfoList(config *conf.CubeConfig) ([]cube.CubeExtendInfo, error) {
+func (client *UCloudClient) GetCubePodExtendInfoList(config *conf.CubeConfig) ([]cube.CubeExtendInfo, error) {
 	if len(config.CubeIdList) > 0 {
 		req := client.CubeConn.NewGetCubeExtendInfoRequest()
 		req.CubeIds = ucloud.String(strings.Join(config.CubeIdList, ","))
@@ -141,7 +141,7 @@ func (client *UCloudClient) filterCubeIdList(filter *conf.CubeIdFilter) ([]strin
 		req.Offset = ucloud.Int(offset)
 		resp, err := client.CubeConn.ListCubePod(req)
 		if err != nil {
-			return nil, fmt.Errorf("error on reading subnet list, %s", err)
+			return nil, fmt.Errorf("error on reading cube list, %s", err)
 		}
 
 		if resp == nil || len(resp.Pods) < 1 {

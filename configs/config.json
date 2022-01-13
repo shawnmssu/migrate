@@ -1,6 +1,6 @@
 {
   "region": "hk",
-  "migrate": {
+  "migrate_eip": {
     "uhost_config": {
       "zone":  "hk-02",
       "image_id_filter":  {

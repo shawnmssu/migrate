@@ -1,9 +1,5 @@
 export VERSION=0.0.1
-TEST?=./...
 GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
-
-test:
-	go test $(TEST) -timeout=30s -parallel=32
 
 vet:
 	@echo "go vet ."
@@ -25,7 +21,7 @@ all: clean mac mac-arm windows linux
 install:
 	go build -o bin/ ./...
 	chmod +x bin/migrate
-	cp bin/migrate /usr/local/bin
+	#cp bin/migrate /usr/local/bin
 
 mac:
 	GOOS=darwin GOARCH=amd64 go build -o bin/ ./...

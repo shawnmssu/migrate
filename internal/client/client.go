@@ -4,6 +4,7 @@ import (
 	"github.com/ucloud/migrate/internal/conf"
 	"github.com/ucloud/ucloud-sdk-go/services/cube"
 	"github.com/ucloud/ucloud-sdk-go/services/uhost"
+	"github.com/ucloud/ucloud-sdk-go/services/ulb"
 	"github.com/ucloud/ucloud-sdk-go/services/unet"
 	"github.com/ucloud/ucloud-sdk-go/ucloud"
 	"github.com/ucloud/ucloud-sdk-go/ucloud/auth"
@@ -14,6 +15,7 @@ type UCloudClient struct {
 	UHostConn *uhost.UHostClient
 	CubeConn  *cube.CubeClient
 	UNetConn  *unet.UNetClient
+	ULBConn   *ulb.ULBClient
 }
 
 func NewClient(sdkCfg conf.Config) (*UCloudClient, error) {
@@ -28,6 +30,7 @@ func NewClient(sdkCfg conf.Config) (*UCloudClient, error) {
 	client.UHostConn = uhost.NewClient(&cfg, &cred)
 	client.CubeConn = cube.NewClient(&cfg, &cred)
 	client.UNetConn = unet.NewClient(&cfg, &cred)
+	client.ULBConn = ulb.NewClient(&cfg, &cred)
 
 	return &client, nil
 }
