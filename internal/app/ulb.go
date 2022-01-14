@@ -1,8 +1,12 @@
 package app
 
 import (
+	"context"
 	"fmt"
+	"github.com/ucloud/migrate/internal/errors"
 	"github.com/ucloud/migrate/internal/log"
+	"github.com/ucloud/migrate/internal/utils/retry"
+	"github.com/ucloud/ucloud-sdk-go/services/ulb"
 	"time"
 )
 
@@ -86,18 +90,69 @@ func (app *MigrateApp) MigrateULB() error {
 			}
 
 			for _, backend := range backendIds {
+				var newBackendId string
 				// BindUHostToUlBVServer
 				log.Logger.Sugar().Infof("[BindUHostToUlBVServer] about "+
 					"VServerId(%s):BackendId(%s):CubeId(%s)UHostId(%s)",
 					vServerInfo.VServerId, backend.BackendId, cubeId, uhostId)
-				newBackendId, err := app.MigrateService.BindUHostToUlBVServer(app.Config.MigrateULB.ULBId, vServerInfo.VServerId, uhostId, backend.Port)
+				newBackendId, err = app.MigrateService.BindUHostToUlBVServer(app.Config.MigrateULB.ULBId, vServerInfo.VServerId, uhostId, backend.Port)
 				if err != nil {
 					return fmt.Errorf("[BindUHostToUlBVServer] about "+
 						"VServerId(%s):BackendId(%s):CubeId(%s)UHostId(%s) got error ,%s",
 						vServerInfo.VServerId, backend.BackendId, cubeId, uhostId, err)
 				}
-				//todo validate and migrate policy
 
+				// Waiting For New Backend Heath Check
+				if app.Config.MigrateULB.ServiceValidation != nil {
+					log.Logger.Sugar().Infof("[Waiting For New Backend Heath Check] about VServerId(%s):NewBackendId(%s):CubeId(%s)UHostId(%s)",
+						vServerInfo.VServerId, newBackendId, cubeId, uhostId)
+
+					timeout := app.Config.MigrateEIP.ServiceValidation.WaitServiceReadyTimeout
+					if timeout == 0 {
+						timeout = 120
+					}
+					ctx := context.TODO()
+					err = retry.Config{
+						StartTimeout: time.Duration(timeout) * time.Second,
+						ShouldRetry: func(err error) bool {
+							return errors.IsNotCompleteError(err)
+						},
+						RetryDelay: (&retry.Backoff{InitialBackoff: 2 * time.Second, MaxBackoff: 6 * time.Second, Multiplier: 2}).Linear,
+					}.Run(ctx, func(ctx context.Context) error {
+						backendInfo := new(ulb.ULBBackendSet)
+						backendInfo, err = app.MigrateService.DescribeBackendById(app.Config.MigrateULB.ULBId, vServerInfo.VServerId, newBackendId)
+						if err != nil {
+							if errors.IsNotFoundErrorError(err) {
+								return errors.NewNotCompletedError(err)
+							} else {
+								return err
+							}
+						}
+						if backendInfo.Status != 0 {
+							return errors.NewNotCompletedError(fmt.Errorf("backend heath check not complete"))
+						}
+						return nil
+					})
+
+					if err != nil {
+						log.Logger.Sugar().Warnf("[Waiting For New Backend Heath Check] about VServerId(%s):NewBackendId(%s):CubeId(%s)UHostId(%s) got error, %s",
+							vServerInfo.VServerId, newBackendId, cubeId, uhostId, err)
+
+						log.Logger.Sugar().Infof("[Rollback - UnBindUHostToUlB] about "+
+							"VServerId(%s):NewBackendId(%s):CubeId(%s):UHostId(%s)",
+							vServerInfo.VServerId, newBackendId, cubeId, uhostId)
+						if err = app.MigrateService.UnBindBackendToUlB(app.Config.MigrateULB.ULBId, newBackendId); err != nil {
+							log.Logger.Sugar().Warnf("[Rollback - UnBindUHostToUlB] about "+
+								"VServerId(%s):NewBackendId(%s):CubeId(%s):UHostId(%s) got error ,%s",
+								vServerInfo.VServerId, newBackendId, cubeId, uhostId, err)
+						}
+
+						return fmt.Errorf("[Waiting For New Backend Heath Check] about VServerId(%s):NewBackendId(%s):CubeId(%s)UHostId(%s) got error, %s",
+							vServerInfo.VServerId, newBackendId, cubeId, uhostId, err)
+					}
+				}
+
+				// todo migrate policy
 				// UnBindBackendToUlB
 				log.Logger.Sugar().Infof("[UnBindBackendToUlB] about "+
 					"VServerId(%s):BackendId(%s):CubeId(%s):UHostId(%s)",
@@ -115,6 +170,7 @@ func (app *MigrateApp) MigrateULB() error {
 							"VServerId(%s):NewBackendId(%s):CubeId(%s):UHostId(%s) got error ,%s",
 							vServerInfo.VServerId, newBackendId, cubeId, uhostId, err)
 					}
+
 					return fmt.Errorf("[UnBindBackendToUlB] about "+
 						"VServerId(%s):BackendId(%s):CubeId(%s):UHostId(%s) got error ,%s",
 						vServerInfo.VServerId, backend.BackendId, cubeId, uhostId, err)

@@ -58,6 +58,9 @@
           "type": "CLOUD_RSSD"
         }
       ]
+    },
+    "service_validation": {
+      "wait_service_ready_timeout": 120
     }
   }
 }

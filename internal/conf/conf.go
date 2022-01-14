@@ -18,14 +18,14 @@ type Log struct {
 }
 
 type MigrateULB struct {
-	ULBId       string       `json:"ulb_id" validate:"required"`
-	UHostConfig *UHostConfig `json:"uhost_config" validate:"required"`
-	//ServiceValidation *ULBServiceValidation `json:"service_validation"`
+	ULBId             string                `json:"ulb_id" validate:"required"`
+	UHostConfig       *UHostConfig          `json:"uhost_config" validate:"required"`
+	ServiceValidation *ULBServiceValidation `json:"service_validation"`
 }
 
-//type ULBServiceValidation struct {
-//	WaitServiceReadyTimeout int `json:"wait_service_ready_timeout" validate:"required"`
-//}
+type ULBServiceValidation struct {
+	WaitServiceReadyTimeout int `json:"wait_service_ready_timeout" validate:"required"`
+}
 
 type MigrateEIP struct {
 	UHostConfig       *UHostConfig          `json:"uhost_config" validate:"required"`

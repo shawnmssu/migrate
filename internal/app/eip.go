@@ -83,8 +83,7 @@ func (app *MigrateApp) MigrateEIP() error {
 		for _, info := range cubeIPMap[cubeIdList[i]] {
 			log.Logger.Sugar().Infof("[UnBindEIPToCube] about cubeId[%s] and ip[%s:%s]", cubeIdList[i], info.eipId, info.ip)
 			if err = app.MigrateService.UnBindEIPToCube(cubeIdList[i], info.eipId); err != nil {
-				log.Logger.Sugar().Warnf("[UnBindEIPToCube] about cubeId[%s] and ip[%s:%s] got error, %s", cubeIdList[i], info.eipId, info.ip, err)
-				continue
+				return fmt.Errorf("[UnBindEIPToCube] about cubeId[%s] and ip[%s:%s] got error, %s", cubeIdList[i], info.eipId, info.ip, err)
 			}
 
 			log.Logger.Sugar().Infof("[BindEIPToUHost] about uhostId[%s] and ip[%s:%s]", runningUHostIds[i], info.eipId, info.ip)
