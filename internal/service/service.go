@@ -29,7 +29,7 @@ type CubeService interface {
 type ULBService interface {
 	UnBindBackendToUlB(ulbId, backendId string) error
 	BindUHostToUlBVServer(cubeId, vServerId, uHostId string, port int) (string, error)
-	GetULBCubeInfoList(config *conf.ULBConfig) ([]client.ULBCubeInfo, error)
+	GetULBVServerInfoListAboutCube(ulbId string) ([]client.VServerCubeInfo, error)
 	DescribeBackendById(lbId, vServerId, backendId string) (*ulb.ULBBackendSet, error)
 }
 

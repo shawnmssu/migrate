@@ -127,7 +127,6 @@ func (app *MigrateApp) MigrateEIP() error {
 
 						log.Logger.Sugar().Infof("[Rollback - UnBindEIPToUHost] about uhostId[%s] and ip[%s:%s]", runningUHostIds[i], info.eipId, info.ip)
 						if err = app.MigrateService.UnBindEIPToUHost(runningUHostIds[i], info.eipId); err != nil {
-							// todo test logger error to replace return error
 							return fmt.Errorf("[Rollback - UnBindEIPToUHost] about uhostId[%s] and ip[%s:%s] got error, %s", runningUHostIds[i], info.eipId, info.ip, err)
 						}
 

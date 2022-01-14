@@ -8,6 +8,6 @@ func (cli *CLISuite) TestCmdMockerRun() {
 	_, err := cli.ExecuteCommand(
 		"eip",
 		"-c", "configs/config.json",
-		)
+	)
 	assert.NoError(t, err)
 }

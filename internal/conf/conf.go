@@ -18,15 +18,14 @@ type Log struct {
 }
 
 type MigrateULB struct {
-	UHostConfig       *UHostConfig          `json:"uhost_config" validate:"required"`
-	ULBConfig         *ULBConfig            `json:"ulb_config"  validate:"required"`
-	ServiceValidation *ULBServiceValidation `json:"service_validation"`
+	ULBId       string       `json:"ulb_id" validate:"required"`
+	UHostConfig *UHostConfig `json:"uhost_config" validate:"required"`
+	//ServiceValidation *ULBServiceValidation `json:"service_validation"`
 }
 
-type ULBServiceValidation struct {
-	Port                    int `json:"port" validate:"required"`
-	WaitServiceReadyTimeout int `json:"wait_service_ready_timeout" validate:"required"`
-}
+//type ULBServiceValidation struct {
+//	WaitServiceReadyTimeout int `json:"wait_service_ready_timeout" validate:"required"`
+//}
 
 type MigrateEIP struct {
 	UHostConfig       *UHostConfig          `json:"uhost_config" validate:"required"`
@@ -39,10 +38,11 @@ type EIPServiceValidation struct {
 	WaitServiceReadyTimeout int `json:"wait_service_ready_timeout" validate:"required"`
 }
 
-type ULBConfig struct {
-	UlBIdList   []string     `json:"ulb_id_list"`
-	ULBIdFilter *ULBIdFilter `json:"ulb_id_filter"`
-}
+//
+//type ULBConfig struct {
+//	UlBIdList   []string     `json:"ulb_id_list"`
+//	ULBIdFilter *ULBIdFilter `json:"ulb_id_filter"`
+//}
 
 type ULBIdFilter struct {
 	VPCId      string `json:"vpc_id"`

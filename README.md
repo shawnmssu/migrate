@@ -1,13 +1,22 @@
 # Migrate
 
 Migrate CLI provides a unified command line interface for migrating Cube instances to UHost instances at the present. 
+
 The Process about:
-- Create UHost List (Default: Shared Outstanding UHost)
-- Waiting for UHost Running
-- Unbind one of the queried Cube with EIP and then bind EIP to UHost
-- Repeat the previous step
-- [Option]Running tcp validation about UHost service.
-- [Option]RollBack the EIP to Cube When migrate got error.
+- `migrate eip`
+  - Create UHost List (Default: Shared Outstanding UHost)
+  - Waiting for UHost Running
+  - Unbind one of the queried Cube with EIP and then bind EIP to UHost
+  - Repeat the previous step
+  - [Option]Running tcp validation about UHost service.
+  - [Option]RollBack the EIP to Cube When migrate got error.
+- `migrate ulb`
+  - Create UHost List (Default: Shared Outstanding UHost)
+  - Waiting for UHost Running
+  - Create one ULB VServer Backend used UHost and then delete one ulb backend about Cube
+  - Repeat the previous step
+  - [Option]Running ulb backend health check
+  - [Option]RollBack the ulb backend about Cube When migrate got error.
 
 ## Installation
 
@@ -41,14 +50,14 @@ migrate --conf configs/config.json
   - [CreateUHostInstance](https://docs.ucloud.cn/api/uhost-api/create_uhost_instance)
   - [DescribeImage](https://docs.ucloud.cn/api/uhost-api/describe_image)
   - [ListCubePod](https://docs.ucloud.cn/api/cube-api/list_cube_pod)
-- for example:
+- `migrate eip` for example:
 ```json
 {
   "public_key": "xxx",
   "private_key": "xxx",
   "project_id": "org-xxx",
   "region": "hk",
-  "migrate": {
+  "migrate_eip": {
     "uhost_config": {
       "zone":  "hk-02",
       "image_id_filter":  {
@@ -84,12 +93,52 @@ migrate --conf configs/config.json
   }
 }
 ```
+- `migrate ulb` for example:
+```json
+{
+  "public_key": "xxx",
+  "private_key": "xxx",
+  "project_id": "org-xxx",
+  "region": "hk",
+  "migrate_ulb": {
+    "ulb_id": "ulb-xxx",
+    "uhost_config": {
+      "zone":  "hk-02",
+      "image_id_filter":  {
+        "os_type": "Linux",
+        "image_type": "Base",
+        "most_recent": true
+      },
+      "name_prefix":  "Test-migrate",
+      "password": "xxx",
+      "charge_type":  "Month",
+      "cpu":  1,
+      "memory": 1024,
+      "tag":  "migrate",
+      "minimal_cpu_platform": "Amd/Auto",
+      "machine_type":  "OM",
+      "disks": [
+        {
+          "is_boot": "True",
+          "size": 20,
+          "type": "CLOUD_RSSD"
+        }
+      ]
+    }
+  }
+}
+```
 
 ## Warning
 
 The migrate tool not support distributed consistency service. Therefore, we need to ensure that the CLI can be executed completely without interruption. 
-If the interruption leads to the unbinding of the EIP, you can query the log and manually bind it, which will cause the service provided by the one IP to be unavailable.
+- [`migrate eip`] If the interruption leads to the unbinding of the EIP, you can query the log and manually bind it, which will cause the service provided by the one IP to be unavailable.
 There into, you can use [UCloud CLI](https://docs.ucloud.cn/cli/README) cmd to band eip.
 ```shell
 ucloud eip bind --eip-id "xxx" --resource-type "cube" --resource-id "xxx"
+```
+-[`migrate ulb`] If the interruption leads to the deleting ulb backend about cube, you can query the log and manually delete it.
+    There into, you can use [UCloud CLI](https://docs.ucloud.cn/cli/README) cmd to band eip.
+```shell
+ucloud ulb vserver backend delete --backend-id "xxx" --ulb-id "xxx"
 ```
