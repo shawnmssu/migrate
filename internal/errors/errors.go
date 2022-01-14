@@ -9,6 +9,7 @@ const (
 	ConfigValidateFailed = "ConfigValidateFailed"
 	APIRequestFailed     = "APIRequestFailed"
 	NotCompletedError    = "NotCompletedError"
+	NotFoundError        = "NotFoundError"
 )
 
 type MigrateError struct {
@@ -73,6 +74,21 @@ func NewNotCompletedError(err error) error {
 func IsNotCompleteError(err error) bool {
 	if e, ok := err.(*MigrateError); ok &&
 		(e.ErrorCode() == NotCompletedError || strings.Contains(strings.ToLower(e.Message()), NotCompletedError)) {
+		return true
+	}
+	return false
+}
+
+func NewNotFoundError(err error) error {
+	return &MigrateError{
+		errorCode: NotFoundError,
+		message:   fmt.Sprintf("[NotFoundError]: %s", err),
+	}
+}
+
+func IsNotFoundErrorError(err error) bool {
+	if e, ok := err.(*MigrateError); ok &&
+		(e.ErrorCode() == NotFoundError || strings.Contains(strings.ToLower(e.Message()), NotFoundError)) {
 		return true
 	}
 	return false

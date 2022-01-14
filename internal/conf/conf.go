@@ -1,12 +1,13 @@
 package conf
 
 type Config struct {
-	PublicKey  string   `json:"public_key"`
-	PrivateKey string   `json:"private_key"`
-	ProjectId  string   `json:"project_id"`
-	Region     string   `json:"region"`
-	Migrate    *Migrate `json:"migrate" validate:"required"`
-	Log        *Log     `json:"log"`
+	PublicKey  string      `json:"public_key"`
+	PrivateKey string      `json:"private_key"`
+	ProjectId  string      `json:"project_id"`
+	Region     string      `json:"region"`
+	MigrateEIP *MigrateEIP `json:"migrate_eip"`
+	MigrateULB *MigrateULB `json:"migrate_ulb"`
+	Log        *Log        `json:"log"`
 }
 
 type Log struct {
@@ -16,19 +17,38 @@ type Log struct {
 	Level    string `json:"level"`
 }
 
-type Migrate struct {
-	BasicConfig
-	ServiceValidation *ServiceValidation `json:"service_validation"`
+type MigrateULB struct {
+	ULBId             string                `json:"ulb_id" validate:"required"`
+	UHostConfig       *UHostConfig          `json:"uhost_config" validate:"required"`
+	ServiceValidation *ULBServiceValidation `json:"service_validation"`
 }
 
-type ServiceValidation struct {
+type ULBServiceValidation struct {
+	WaitServiceReadyTimeout int `json:"wait_service_ready_timeout" validate:"required"`
+}
+
+type MigrateEIP struct {
+	UHostConfig       *UHostConfig          `json:"uhost_config" validate:"required"`
+	CubeConfig        *CubeConfig           `json:"cube_config"`
+	ServiceValidation *EIPServiceValidation `json:"service_validation"`
+}
+
+type EIPServiceValidation struct {
 	Port                    int `json:"port" validate:"required"`
 	WaitServiceReadyTimeout int `json:"wait_service_ready_timeout" validate:"required"`
 }
 
-type BasicConfig struct {
-	UHostConfig *UHostConfig `json:"uhost_config" validate:"required"`
-	CubeConfig  *CubeConfig  `json:"cube_config"`
+//
+//type ULBConfig struct {
+//	UlBIdList   []string     `json:"ulb_id_list"`
+//	ULBIdFilter *ULBIdFilter `json:"ulb_id_filter"`
+//}
+
+type ULBIdFilter struct {
+	VPCId      string `json:"vpc_id"`
+	SubnetId   string `json:"subnet_id"`
+	BusinessId string `json:"business_id"`
+	NameRegex  string `json:"name_regex"`
 }
 
 type CubeConfig struct {

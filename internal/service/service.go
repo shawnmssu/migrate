@@ -4,11 +4,13 @@ import (
 	"github.com/ucloud/migrate/internal/client"
 	"github.com/ucloud/migrate/internal/conf"
 	"github.com/ucloud/ucloud-sdk-go/services/cube"
+	"github.com/ucloud/ucloud-sdk-go/services/ulb"
 )
 
 type MigrateCubeService interface {
 	UHostService
-	Cube
+	CubeService
+	ULBService
 }
 
 type UHostService interface {
@@ -18,10 +20,17 @@ type UHostService interface {
 	WaitingForUHostRunning(uHostIds []string) ([]string, error)
 }
 
-type Cube interface {
+type CubeService interface {
 	UnBindEIPToCube(cubeId, eipId string) error
 	BindEIPToCube(cubeId, eipId string) error
-	GetCubeCubePodExtendInfoList(config *conf.CubeConfig) ([]cube.CubeExtendInfo, error)
+	GetCubePodExtendInfoList(config *conf.CubeConfig) ([]cube.CubeExtendInfo, error)
+}
+
+type ULBService interface {
+	UnBindBackendToUlB(ulbId, backendId string) error
+	BindUHostToUlBVServer(cubeId, vServerId, uHostId string, port int) (string, error)
+	GetULBVServerInfoListAboutCube(ulbId string) ([]client.VServerCubeInfo, error)
+	DescribeBackendById(lbId, vServerId, backendId string) (*ulb.ULBBackendSet, error)
 }
 
 func NewBasicMigrateCubeService(client *client.UCloudClient) MigrateCubeService {

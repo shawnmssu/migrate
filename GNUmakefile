@@ -1,9 +1,5 @@
 export VERSION=0.0.1
-TEST?=./...
 GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
-
-test:
-	go test $(TEST) -timeout=30s -parallel=32
 
 vet:
 	@echo "go vet ."
