@@ -13,9 +13,8 @@ The Process about:
 - `migrate ulb`
   - Create UHost List (Default: Shared Outstanding UHost)
   - Waiting for UHost Running
-  - Create one ULB VServer Backend used UHost and then delete one ulb backend about Cube
+  - Create one ULB VServer Backend used UHost and then delete one ulb backend about Cube.(migrate ulb policy not supported yet)
   - Repeat the previous step
-  - [Option]Running ulb backend health check
   - [Option]RollBack the ulb backend about Cube When migrate got error.
 
 ## Installation
