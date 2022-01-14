@@ -24,7 +24,7 @@ The Process about:
 - download release
 - decompress release, for example:
 ```shell
-tar zxvf migrate_0.0.1_linux-amd64.tgz
+tar zxvf migrate_x.x.x_linux-amd64.tgz
 ```
 
 **Building from source(Recommended if you have golang installed)**
