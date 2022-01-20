@@ -10,6 +10,7 @@ import (
 	"github.com/ucloud/migrate/internal/utils/retry"
 	"github.com/ucloud/ucloud-sdk-go/services/uhost"
 	"github.com/ucloud/ucloud-sdk-go/ucloud"
+	uerr "github.com/ucloud/ucloud-sdk-go/ucloud/error"
 	"regexp"
 	"sort"
 	"strings"
@@ -37,6 +38,30 @@ func (client *UCloudClient) UnBindEIPToUHost(uhostId, eipId string) error {
 	req.ResourceType = ucloud.String("uhost")
 
 	_, err := client.UNetConn.UnBindEIP(req)
+	if err != nil {
+		return errors.NewAPIRequestFailedError(err)
+	}
+	return nil
+}
+
+func (client *UCloudClient) PowerOffUHostInstance(uhostId string) error {
+	req := client.UHostConn.NewPoweroffUHostInstanceRequest()
+	req.UHostId = ucloud.String(uhostId)
+
+	_, err := client.UHostConn.PoweroffUHostInstance(req)
+	if err != nil {
+		return errors.NewAPIRequestFailedError(err)
+	}
+	return nil
+}
+
+func (client *UCloudClient) DeleteUHostInstance(uhostId string) error {
+	req := client.UHostConn.NewTerminateUHostInstanceRequest()
+	req.UHostId = ucloud.String(uhostId)
+	req.ReleaseEIP = ucloud.Bool(true)
+	req.ReleaseUDisk = ucloud.Bool(true)
+
+	_, err := client.UHostConn.TerminateUHostInstance(req)
 	if err != nil {
 		return errors.NewAPIRequestFailedError(err)
 	}
@@ -109,8 +134,7 @@ func (client *UCloudClient) createUHostInstance(config *conf.UHostConfig, maxCou
 	if len(config.ImageId) > 0 {
 		req.ImageId = ucloud.String(config.ImageId)
 	} else if config.ImageIdFilter != nil {
-		config.ImageIdFilter.Zone = config.Zone
-		imageId, err := client.filterImageId(config.ImageIdFilter)
+		imageId, err := client.filterImageId(config.ImageIdFilter, config.Zone)
 		if err != nil {
 			return nil, err
 		}
@@ -196,21 +220,49 @@ func (client *UCloudClient) createUHostInstance(config *conf.UHostConfig, maxCou
 		req.SecurityGroupId = ucloud.String(config.SecurityGroupId)
 	}
 
+	if config.PrivateIp != "" {
+		req.PrivateIp = []string{config.PrivateIp}
+	}
+
 	resp, err := client.UHostConn.CreateUHostInstance(req)
 	if err != nil {
+		if uErr, ok := err.(uerr.Error); ok && uErr.Code() == 8433 {
+			ctx := context.TODO()
+			err = retry.Config{
+				Tries: 10,
+				ShouldRetry: func(err error) bool {
+					return errors.IsNotCompleteError(err)
+				},
+				RetryDelay: (&retry.Backoff{InitialBackoff: 2 * time.Second, MaxBackoff: 8 * time.Second, Multiplier: 3}).Linear,
+			}.Run(ctx, func(ctx context.Context) error {
+				resp, err = client.UHostConn.CreateUHostInstance(req)
+				if err != nil {
+					if uErr, ok = err.(uerr.Error); ok && uErr.Code() == 8433 {
+						return errors.NewNotCompletedError(err)
+					}
+					return err
+				}
+				return nil
+			})
+			if err != nil {
+				return nil, errors.NewAPIRequestFailedError(
+					fmt.Errorf("[Waiting for Create UHost By PrivateIp %s] got error, %s", config.PrivateIp, err))
+			}
+			return resp.UHostIds, nil
+		}
 		return nil, errors.NewAPIRequestFailedError(err)
 	}
 
 	return resp.UHostIds, nil
 }
 
-func (client *UCloudClient) filterImageId(filter *conf.ImageIdFilter) (string, error) {
+func (client *UCloudClient) filterImageId(filter *conf.ImageIdFilter, zone string) (string, error) {
 	if filter == nil {
 		return "", fmt.Errorf("empty filter")
 	}
 	req := client.UHostConn.NewDescribeImageRequest()
 
-	req.Zone = ucloud.String(filter.Zone)
+	req.Zone = ucloud.String(zone)
 
 	if len(filter.ImageType) > 0 {
 		req.ImageType = ucloud.String(filter.ImageType)
@@ -278,7 +330,7 @@ func (client *UCloudClient) filterImageId(filter *conf.ImageIdFilter) (string, e
 	return finalImages[0].ImageId, nil
 }
 
-func (client *UCloudClient) describeUHostById(uhostId string) (*uhost.UHostInstanceSet, error) {
+func (client *UCloudClient) DescribeUHostById(uhostId string) (*uhost.UHostInstanceSet, error) {
 	req := client.UHostConn.NewDescribeUHostInstanceRequest()
 	req.UHostIds = []string{uhostId}
 
@@ -293,12 +345,12 @@ func (client *UCloudClient) describeUHostById(uhostId string) (*uhost.UHostInsta
 	return &resp.UHostSet[0], nil
 }
 
-func (client *UCloudClient) WaitingForUHostRunning(uHostIds []string) ([]string, error) {
+func (client *UCloudClient) WaitingForUHostStatus(uHostIds []string, status string) ([]string, error) {
 	expectedUHostIds := map[string]struct{}{}
 	for _, id := range uHostIds {
 		expectedUHostIds[id] = struct{}{}
 	}
-	runningUHostIds := make([]string, 0)
+	statusUHostIds := make([]string, 0)
 	ctx := context.TODO()
 	err := retry.Config{
 		Tries: 10,
@@ -308,14 +360,14 @@ func (client *UCloudClient) WaitingForUHostRunning(uHostIds []string) ([]string,
 		RetryDelay: (&retry.Backoff{InitialBackoff: 2 * time.Second, MaxBackoff: 6 * time.Second, Multiplier: 10}).Linear,
 	}.Run(ctx, func(ctx context.Context) error {
 		for uhostId := range expectedUHostIds {
-			inst, err := client.describeUHostById(uhostId)
+			inst, err := client.DescribeUHostById(uhostId)
 			if err != nil {
 				return err
 			}
 
-			if inst.State == "Running" {
+			if inst.State == status {
 				delete(expectedUHostIds, uhostId)
-				runningUHostIds = append(runningUHostIds, uhostId)
+				statusUHostIds = append(statusUHostIds, uhostId)
 				continue
 			}
 
@@ -331,7 +383,7 @@ func (client *UCloudClient) WaitingForUHostRunning(uHostIds []string) ([]string,
 			for k := range expectedUHostIds {
 				keys = append(keys, k)
 			}
-			return errors.NewNotCompletedError(fmt.Errorf("waiting uhost %v running", keys))
+			return errors.NewNotCompletedError(fmt.Errorf("waiting uhost %v to %s", keys, status))
 		}
 
 		return nil
@@ -342,7 +394,7 @@ func (client *UCloudClient) WaitingForUHostRunning(uHostIds []string) ([]string,
 		for v := range expectedUHostIds {
 			s = append(s, v)
 		}
-		return nil, fmt.Errorf("[Waiting for UHost Running] about uhostIds: %q got error, %s", strings.Join(s, ","), err)
+		return nil, fmt.Errorf("[Waiting for UHost %s] about uhostIds: %q got error, %s", strings.Join(s, ","), status, err)
 	}
-	return runningUHostIds, nil
+	return statusUHostIds, nil
 }

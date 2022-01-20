@@ -12,35 +12,6 @@ import (
 	"strings"
 )
 
-type Provider struct {
-	ChargeType     string `yaml:"chargeType"`
-	ContainerCount string `yaml:"containerCount"`
-	CpuPlatform    string `yaml:"cpuPlatform"`
-	Region         string `yaml:"region"`
-	SubnetId       string `yaml:"subnetId"`
-	VpcId          string `yaml:"vpcId"`
-	Zone           string `yaml:"zone"`
-}
-type Metadata struct {
-	CreateTimestamp string   `yaml:"creationTimestamp"`
-	Group           string   `yaml:"group"`
-	Provider        Provider `yaml:"provider"`
-	CubeId          string   `yaml:"cubeId"`
-}
-type status struct {
-	Phase string `yaml:"phase"`
-	PodIp string `yaml:"podIp"`
-}
-type CubePodInfo struct {
-	Metadata Metadata `yaml:"metadata"`
-	Status   status   `yaml:"status"`
-}
-
-type CubePodExtendInfo struct {
-	CubePodInfo    CubePodInfo
-	CubeExtendInfo cube.CubeExtendInfo
-}
-
 func (client *UCloudClient) UnBindEIPToCube(cubeId, eipId string) error {
 	req := client.UNetConn.NewUnBindEIPRequest()
 	req.EIPId = ucloud.String(eipId)
@@ -63,6 +34,15 @@ func (client *UCloudClient) BindEIPToCube(cubeId, eipId string) error {
 	return nil
 }
 
+func (client *UCloudClient) DeleteCube(cubeId string) error {
+	req := client.CubeConn.NewDeleteCubePodRequest()
+	req.CubeId = ucloud.String(cubeId)
+	if _, err := client.CubeConn.DeleteCubePod(req); err != nil {
+		return errors.NewAPIRequestFailedError(err)
+	}
+	return nil
+}
+
 func (client *UCloudClient) GetCubePodExtendInfoList(config *conf.CubeConfig) ([]cube.CubeExtendInfo, error) {
 	if len(config.CubeIdList) > 0 {
 		req := client.CubeConn.NewGetCubeExtendInfoRequest()
@@ -76,10 +56,15 @@ func (client *UCloudClient) GetCubePodExtendInfoList(config *conf.CubeConfig) ([
 		}
 		return resp.ExtendInfo, nil
 	} else if config.CubeIdFilter != nil {
-		idList, err := client.filterCubeIdList(config.CubeIdFilter)
+		cubePodInfoList, err := client.filterCubeInfoList(config.CubeIdFilter)
 		if err != nil {
 			return nil, errors.NewConfigValidateFailedError(err)
 		}
+		var idList []string
+		for _, info := range cubePodInfoList {
+			idList = append(idList, info.Metadata.CubeId)
+		}
+
 		req := client.CubeConn.NewGetCubeExtendInfoRequest()
 		req.CubeIds = ucloud.String(strings.Join(idList, ","))
 		resp, err := client.CubeConn.GetCubeExtendInfo(req)
@@ -112,7 +97,106 @@ func (client *UCloudClient) GetCubePodExtendInfoList(config *conf.CubeConfig) ([
 	return nil, errors.NewConfigValidateFailedError(fmt.Errorf("must set one of `cube_id_list` and `cube_id_filter`"))
 }
 
-func (client *UCloudClient) filterCubeIdList(filter *conf.CubeIdFilter) ([]string, error) {
+type Provider struct {
+	ChargeType     string `yaml:"chargeType"`
+	ContainerCount string `yaml:"containerCount"`
+	CpuPlatform    string `yaml:"cpuPlatform"`
+	Region         string `yaml:"region"`
+	SubnetId       string `yaml:"subnetId"`
+	VpcId          string `yaml:"vpcId"`
+	Zone           string `yaml:"zone"`
+}
+type Metadata struct {
+	CreateTimestamp string   `yaml:"creationTimestamp"`
+	Group           string   `yaml:"group"`
+	Provider        Provider `yaml:"provider"`
+	CubeId          string   `yaml:"cubeId"`
+}
+type status struct {
+	Phase string `yaml:"phase"`
+	PodIp string `yaml:"podIp"`
+}
+type CubePodInfo struct {
+	Metadata Metadata `yaml:"metadata"`
+	Status   status   `yaml:"status"`
+}
+
+func (client *UCloudClient) GetCubePodInfoList(config *conf.CubeConfig) ([]CubePodInfo, error) {
+	var cubePodInfoList []CubePodInfo
+	if len(config.CubeIdList) > 0 {
+		for _, cubeId := range config.CubeIdList {
+			reqPod := client.CubeConn.NewGetCubePodRequest()
+			reqPod.CubeId = ucloud.String(cubeId)
+
+			respPod, err := client.CubeConn.GetCubePod(reqPod)
+			if err != nil {
+				return nil, err
+			}
+			podByte, err := base64.StdEncoding.DecodeString(respPod.Pod)
+			if err != nil {
+				return nil, err
+			}
+
+			var podInfo CubePodInfo
+			if err = yaml.Unmarshal(podByte, &podInfo); err != nil {
+				return nil, err
+			}
+			cubePodInfoList = append(cubePodInfoList, podInfo)
+		}
+		if len(cubePodInfoList) == 0 {
+			return nil, errors.NewConfigValidateFailedError(fmt.Errorf("can not found any cube about cube_id_list, %v", config.CubeIdList))
+		}
+		return cubePodInfoList, nil
+	} else if config.CubeIdFilter != nil {
+		infoList, err := client.filterCubeInfoList(config.CubeIdFilter)
+		if err != nil {
+			return nil, errors.NewConfigValidateFailedError(err)
+		}
+
+		if len(config.CubeIdFilter.NameRegex) > 0 {
+			infoIdMap := make(map[string]CubePodInfo)
+			for _, info := range infoList {
+				infoIdMap[info.Metadata.CubeId] = info
+			}
+
+			var idList []string
+			for _, info := range cubePodInfoList {
+				idList = append(idList, info.Metadata.CubeId)
+			}
+
+			req := client.CubeConn.NewGetCubeExtendInfoRequest()
+			req.CubeIds = ucloud.String(strings.Join(idList, ","))
+			resp, err := client.CubeConn.GetCubeExtendInfo(req)
+			if err != nil {
+				return nil, errors.NewAPIRequestFailedError(err)
+			}
+			if len(resp.ExtendInfo) == 0 {
+				return nil, errors.NewAPIRequestFailedError(fmt.Errorf("got empty cube extendInfo for filter name"))
+			}
+
+			r := regexp.MustCompile(config.CubeIdFilter.NameRegex)
+			for _, v := range resp.ExtendInfo {
+				if r != nil && !r.MatchString(v.Name) {
+					continue
+				}
+				if info, ok := infoIdMap[v.CubeId]; ok {
+					cubePodInfoList = append(cubePodInfoList, info)
+				}
+			}
+			if len(cubePodInfoList) == 0 {
+				return nil, errors.NewAPIRequestFailedError(fmt.Errorf("got empty cube extendInfo for filter name"))
+			}
+		} else {
+			cubePodInfoList = infoList
+		}
+
+		return cubePodInfoList, nil
+	}
+
+	return nil, errors.NewConfigValidateFailedError(fmt.Errorf("must set one of `cube_id_list` and `cube_id_filter`"))
+}
+
+func (client *UCloudClient) filterCubeInfoList(filter *conf.CubeIdFilter) ([]CubePodInfo, error) {
 	if filter == nil {
 		return nil, fmt.Errorf("empty cube id filter")
 	}
@@ -133,7 +217,7 @@ func (client *UCloudClient) filterCubeIdList(filter *conf.CubeIdFilter) ([]strin
 		req.SubnetId = ucloud.String(filter.SubnetId)
 	}
 
-	var idList []string
+	var infoList []CubePodInfo
 	var offset int
 	limit := 100
 	for {
@@ -154,11 +238,11 @@ func (client *UCloudClient) filterCubeIdList(filter *conf.CubeIdFilter) ([]strin
 				return nil, err
 			}
 			var podInfo CubePodInfo
-			if err := yaml.Unmarshal(podByte, &podInfo); err != nil {
+			if err = yaml.Unmarshal(podByte, &podInfo); err != nil {
 				return nil, err
 			}
 
-			idList = append(idList, podInfo.Metadata.CubeId)
+			infoList = append(infoList, podInfo)
 		}
 
 		if len(resp.Pods) < limit {
@@ -168,8 +252,8 @@ func (client *UCloudClient) filterCubeIdList(filter *conf.CubeIdFilter) ([]strin
 		offset = offset + limit
 	}
 
-	if len(idList) == 0 {
+	if len(infoList) == 0 {
 		return nil, errors.NewConfigValidateFailedError(fmt.Errorf("can not found any cube about cube_id_filter, %v", filter))
 	}
-	return idList, nil
+	return infoList, nil
 }

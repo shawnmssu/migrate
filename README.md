@@ -17,6 +17,15 @@ The Process about:
   - Repeat the previous step
   - [Option]Running ulb backend health check
   - [Option]RollBack the ulb backend about Cube When migrate got error.
+- `migrate private-ip`
+  - Try to Create temporary one UHost to validate UHost Config, waiting for UHost running and then delete it.
+  - Delete one Cube for freed the private ip
+  - Create UHost By the private ip and UHost Config (Default: Shared Outstanding UHost)
+  - Waiting for UHost Running
+  - Repeat the previous step
+  - [Option] use the `dry-run` flag to validate UHost Config and Cube config 
+    - if set true which means that only try to create the UHost with config, waiting for UHost running and then delete it.
+    - for example:`migrate private-ip --conf xxx ----dry-run` 
 
 ## Installation
 
@@ -128,6 +137,45 @@ migrate --conf configs/config.json
   }
 }
 ```
+- `migrate private-ip` for example:
+```json
+{
+  "public_key": "xxx",
+  "private_key": "xxx",
+  "project_id": "org-xxx",
+  "region": "hk",
+  "migrate_private_ip": {
+    "uhost_config": {
+      "zone":  "hk-02",
+      "image_id_filter":  {
+        "os_type": "Linux",
+        "image_type": "Base",
+        "most_recent": true
+      },
+      "name_prefix":  "Test-migrate",
+      "password": "ucloud_2022",
+      "charge_type":  "Dynamic",
+      "cpu":  1,
+      "memory": 1024,
+      "tag":  "migrate",
+      "minimal_cpu_platform": "Amd/Auto",
+      "machine_type":  "OM",
+      "disks": [
+        {
+          "is_boot": "True",
+          "size": 20,
+          "type": "CLOUD_RSSD"
+        }
+      ]
+    },
+    "cube_config": {
+      "cube_id_filter": {
+        "zone": "hk-02"
+      }
+    }
+  }
+}
+```
 
 ## Warning
 
@@ -137,8 +185,32 @@ There into, you can use [UCloud CLI](https://docs.ucloud.cn/cli/README) cmd to b
 ```shell
 ucloud eip bind --eip-id "xxx" --resource-type "cube" --resource-id "xxx"
 ```
--[`migrate ulb`] If the interruption leads to the deleting ulb backend about cube, you can query the log and manually delete it.
+- [`migrate ulb`] If the interruption leads to the deleting ulb backend about cube, you can query the log and manually delete it.
     There into, you can use [UCloud CLI](https://docs.ucloud.cn/cli/README) cmd to band eip.
 ```shell
 ucloud ulb vserver backend delete --backend-id "xxx" --ulb-id "xxx"
+```
+- [`migrate private-ip`] If the interruption leads to the cube have been deleted but the UHost have not been created with the private ip, you can query the log and manually create UHost with private ip.
+There into, you can use [UCloud CLI](https://docs.ucloud.cn/cli/README) cmd to create UHost and you can refer the [UAPI](https://console.ucloud.cn/uapi/detail?id=CreateUHostInstance).
+```shell
+ucloud api \
+  --Action CreateUHostInstance \
+  --Region hk \
+  --Zone hk-02 \
+  --ProjectId org-xxx \
+  --VPCId xxx \
+  --SubnetId xxx \
+  --ImageId uimage-xxx \
+  --LoginMode Password \
+  --Password dWNsb3VkXzIwMjI= \
+  --Name Test-migrate \
+  --Tag migrate \
+  --CPU 1 \
+  --Memory 1024 \
+  --MachineType OM \
+  --MinimalCpuPlatform Amd/Auto \
+  --Disks.0.IsBoot True \
+  --Disks.0.Type CLOUD_RSSD \
+  --Disks.0.Size 20 \
+  --PrivateIp.0 xxx
 ```

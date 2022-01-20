@@ -51,7 +51,7 @@ func (app *MigrateApp) MigrateULB() error {
 	// Waiting for UHost Running
 	log.Logger.Sugar().Infof("[Waiting for UHost Running], %v", uHostIds)
 	var runningUHostIds []string
-	runningUHostIds, err = app.MigrateService.WaitingForUHostRunning(uHostIds)
+	runningUHostIds, err = app.MigrateService.WaitingForUHostStatus(uHostIds, "Running")
 	if err != nil {
 		return fmt.Errorf("[Waiting for UHost Running] got error, %s", err)
 	}

@@ -1,4 +1,4 @@
-export VERSION=0.0.2
+export VERSION=0.0.3
 GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
 
 vet:
@@ -18,10 +18,10 @@ clean:
 
 all: clean mac mac-arm windows linux
 
-install:
+install:clean
 	go build -o bin/ ./...
 	chmod +x bin/migrate
-	cp bin/migrate /usr/local/bin
+	cp bin/migrate /usr/local/bin/migrate
 
 mac:
 	GOOS=darwin GOARCH=amd64 go build -o bin/ ./...
