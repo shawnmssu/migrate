@@ -32,15 +32,14 @@ func (app *MigrateApp) MigratePrivateIp(dryRun bool) error {
 	}
 	log.Logger.Sugar().Infof("[Need Migrate Cube List], %v", cubePrivateIpInfoList)
 
-	// Try to CreateUHost
-	log.Logger.Sugar().Infof("[Try to Create One UHost] about vpcId(%s) and subnetId(%s)",
-		cubePrivateIpInfoList[0].vpcId, cubePrivateIpInfoList[0].subnetId)
-	if err = app.tryCreateUHost(*app.Config.MigratePrivateIp.UHostConfig,
-		cubePrivateIpInfoList[0].vpcId, cubePrivateIpInfoList[0].subnetId); err != nil {
-		return err
-	}
-
 	if dryRun {
+		// Try to CreateUHost
+		log.Logger.Sugar().Infof("[Try to Create One UHost] about vpcId(%s) and subnetId(%s)",
+			cubePrivateIpInfoList[0].vpcId, cubePrivateIpInfoList[0].subnetId)
+		if err = app.tryCreateUHost(*app.Config.MigratePrivateIp.UHostConfig,
+			cubePrivateIpInfoList[0].vpcId, cubePrivateIpInfoList[0].subnetId); err != nil {
+			return err
+		}
 		log.Logger.Sugar().Infof("[Dry Run Complete]")
 		return nil
 	}

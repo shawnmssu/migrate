@@ -1,4 +1,4 @@
-export VERSION=0.0.4
+export VERSION=0.0.5
 GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
 
 vet:

@@ -4,27 +4,27 @@ Migrate CLI provides a unified command line interface for migrating Cube instanc
 
 The Process about:
 - `migrate eip`
-  - Create UHost List (Default: Shared Outstanding UHost)
-  - Waiting for UHost Running
-  - Unbind one of the queried Cube with EIP and then bind EIP to UHost
-  - Repeat the previous step
+  - Create UHost List (Default: Shared Outstanding UHost).
+  - Waiting for UHost Running.
+  - Unbind one of the queried Cube with EIP and then bind EIP to UHost.
+  - Repeat the previous step.
   - [Option]Running tcp validation about UHost service.
   - [Option]RollBack the EIP to Cube When migrate got error.
 - `migrate ulb`
-  - Create UHost List (Default: Shared Outstanding UHost)
-  - Waiting for UHost Running
-  - Create one ULB VServer Backend used UHost and then delete one ulb backend about Cube.(migrate ulb policy not supported yet)
-  - Repeat the previous step
-  - [Option]Running ulb backend health check
+  - Create UHost List (Default: Shared Outstanding UHost).
+  - Waiting for UHost Running.
+  - Create one ULB VServer Backend used UHost and then delete one ulb backend about Cube.(migrate ulb policy not supported yet).
+  - Repeat the previous step.
+  - [Option]Running ulb backend health check.
   - [Option]RollBack the ulb backend about Cube When migrate got error.
 - `migrate private-ip`
-  - Try to create one temporary UHost with "Dynamic" `charge_type` to validate `uhost_config`, waiting for UHost running and then delete it.
-  - Delete one Cube for freed the private ip
-  - Create UHost By the private ip and UHost Config (Default: Shared Outstanding UHost)
-  - Waiting for UHost Running
-  - Repeat the previous step
-  - [Option] use the `dry-run` flag to validate UHost Config and Cube config 
-    - if set true which means that only execute the first step about create one temporary UHost with "Dynamic" `charge_type` to validate `uhost_config`, waiting for UHost running and then delete it.
+  - Get Cube list which need to migrate by `cube_config`.
+  - Delete one Cube for freed the private ip.
+  - Create UHost By the private ip and UHost Config (Default: Shared Outstanding UHost).
+  - Waiting for UHost Running.
+  - Repeat the previous step.
+  - [Option] use the `dry-run` flag to validate UHost Config and Cube config.
+    - if set true which means that only try to create one temporary UHost with "Dynamic" `charge_type` to validate `uhost_config`, waiting for UHost running and then delete it.
     - for example:`migrate private-ip --conf xxx --dry-run` 
 
 ## Installation
