@@ -107,7 +107,7 @@ func (app *MigrateApp) MigrateULB() error {
 					log.Logger.Sugar().Infof("[Waiting For New Backend Heath Check] about VServerId(%s):NewBackendId(%s):CubeId(%s)UHostId(%s)",
 						vServerInfo.VServerId, newBackendId, cubeId, uhostId)
 
-					timeout := app.Config.MigrateEIP.ServiceValidation.WaitServiceReadyTimeout
+					timeout := app.Config.MigrateULB.ServiceValidation.WaitServiceReadyTimeout
 					if timeout == 0 {
 						timeout = 120
 					}

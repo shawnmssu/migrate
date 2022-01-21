@@ -28,12 +28,12 @@ func NewCmdPrivateIp() *cobra.Command {
 				utils.CheckErrorWithCode(fmt.Errorf("must set `migrate_private_ip` config for cmd `migrate private-ip`"))
 			}
 
-			if config.MigrateULB.UHostConfig.VPCId != "" {
+			if config.MigratePrivateIp.UHostConfig.VPCId != "" {
 				utils.CheckErrorWithCode(fmt.Errorf("can not set " +
 					"`migrate_ulb.uhost_config.vpc_id` config for cmd `migrate private-ip`, we will use the cube config"))
 			}
 
-			if config.MigrateULB.UHostConfig.SubnetId != "" {
+			if config.MigratePrivateIp.UHostConfig.SubnetId != "" {
 				utils.CheckErrorWithCode(fmt.Errorf("can not set " +
 					"`migrate_ulb.uhost_config.subnet_id` config for cmd `migrate private-ip`, we will use the cube config"))
 			}

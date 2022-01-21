@@ -62,7 +62,7 @@ func (app *MigrateApp) MigratePrivateIp(dryRun bool) error {
 		// Start CreateUHost
 		log.Logger.Sugar().Infof("[Start CreateUHost] about vpcId(%s):subnetId(%s):CubeId(%s):privateIp(%s)",
 			info.vpcId, info.subnetId, info.cubeId, info.privateIp)
-		uhostConfigCopy := *app.Config.MigrateEIP.UHostConfig
+		uhostConfigCopy := *app.Config.MigratePrivateIp.UHostConfig
 		uhostConfigCopy.VPCId = info.vpcId
 		uhostConfigCopy.SubnetId = info.subnetId
 		uhostConfigCopy.PrivateIp = info.privateIp
