@@ -53,12 +53,7 @@ migrate --help
 migrate --conf configs/config.json
 ```
 
-## Config
-
-- You may refer to the [API Docs](https://docs.ucloud.cn/api):
-  - [CreateUHostInstance](https://docs.ucloud.cn/api/uhost-api/create_uhost_instance)
-  - [DescribeImage](https://docs.ucloud.cn/api/uhost-api/describe_image)
-  - [ListCubePod](https://docs.ucloud.cn/api/cube-api/list_cube_pod)
+## Config example
 - `migrate eip` for example:
 ```json
 {
@@ -176,6 +171,78 @@ migrate --conf configs/config.json
   }
 }
 ```
+
+## Config Doc
+You may refer to the [API Docs](https://docs.ucloud.cn/api):
+- [CreateUHostInstance](https://docs.ucloud.cn/api/uhost-api/create_uhost_instance)
+- [DescribeImage](https://docs.ucloud.cn/api/uhost-api/describe_image)
+- [ListCubePod](https://docs.ucloud.cn/api/cube-api/list_cube_pod)
+
+### Argument Reference
+
+* `public_key` - (Required) This is the UCloud public key. You may refer to [get public key from console](https://console.ucloud.cn/uapi/apikey). It must be provided, but
+  it can also be sourced from the `UCLOUD_PUBLIC_KEY` environment variable.
+
+* `private_key` - (Required) This is the UCloud private key. You may refer to [get private key from console](https://console.ucloud.cn/uapi/apikey). It must be provided, but
+  it can also be sourced from the `UCLOUD_PRIVATE_KEY` environment variable.
+
+* `region` - (Required) This is the UCloud region. It must be provided, but
+  it can also be sourced from the `UCLOUD_REGION` environment variables.
+
+* `project_id` - (Required) This is the UCloud project id. It must be provided, but
+  it can also be sourced from the `UCLOUD_PROJECT_ID` environment variables.
+
+* `migrate_private_ip`- (Required when use cmd `migrate private-ip`) See [migrate_private_ip](#migrate_private_ip) below for details on attributes.
+
+#### migrate_private_ip
+
+* `uhost_config` - (Required) See [uhost_config](#uhost_config) below for details on attributes.
+* `cube_config` - (Required) See [cube_config](#cube_config) below for details on attributes.
+
+#### cube_config
+
+* `cube_id_list` - (Optional, Array)
+* `cube_id_filter` - (Optional) See [cube_id_filter](#cube_id_filter) below for details on attributes.
+
+#### cube_id_filter
+
+* `zone`
+* `vpc_id`
+* `subnet_id`
+* `group`
+* `deployment_id`
+* `name_regex`
+
+#### uhost_config
+
+* `zone` - (Required)
+* `disks` - (Required, Array) See [disks](#disks) below for details on attributes.
+* `password` - (Required)
+* `image_id` - (Optional)
+* `image_id_filter` - (Optional) See [image_id_filter](#image_id_filter) below for details on attributes.
+* `name` - (Optional)
+* `name_prefix` - (Optional)
+* `charge_type` - (Optional)
+* `duration` - (Optional)
+* `cpu` - (Optional)
+* `memory` - (Optional)
+* `tag` - (Optional)
+* `minimal_cpu_platform` - (Optional)
+* `machine_type` - (Optional)
+* `security_group_id` - (Optional)
+
+#### disks
+
+* `is_boot` - (Required)
+* `size` - (Required)
+* `type` - (Required)
+
+#### image_id_filter
+
+* `os_type` - (Optional)
+* `image_type` - (Optional)
+* `most_recent` - (Optional)
+* `name_regex` - (Optional)
 
 ## Warning
 
