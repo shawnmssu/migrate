@@ -18,14 +18,14 @@ The Process about:
   - [Option]Running ulb backend health check
   - [Option]RollBack the ulb backend about Cube When migrate got error.
 - `migrate private-ip`
-  - Try to Create temporary one UHost to validate UHost Config, waiting for UHost running and then delete it.
+  - Try to create one temporary UHost with "Dynamic" `charge_type` to validate `uhost_config`, waiting for UHost running and then delete it.
   - Delete one Cube for freed the private ip
   - Create UHost By the private ip and UHost Config (Default: Shared Outstanding UHost)
   - Waiting for UHost Running
   - Repeat the previous step
   - [Option] use the `dry-run` flag to validate UHost Config and Cube config 
-    - if set true which means that only try to create the UHost with config, waiting for UHost running and then delete it.
-    - for example:`migrate private-ip --conf xxx ----dry-run` 
+    - if set true which means that only execute the first step about create one temporary UHost with "Dynamic" `charge_type` to validate `uhost_config`, waiting for UHost running and then delete it.
+    - for example:`migrate private-ip --conf xxx --dry-run` 
 
 ## Installation
 

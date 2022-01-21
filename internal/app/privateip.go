@@ -104,6 +104,7 @@ func (app *MigrateApp) tryCreateUHost(uhostConfig conf.UHostConfig, vpcId, subne
 	uhostConfigCopy := uhostConfig
 	uhostConfigCopy.VPCId = vpcId
 	uhostConfigCopy.SubnetId = subnetId
+	uhostConfigCopy.ChargeType = "Dynamic"
 
 	uHostIds, err := app.MigrateService.CreateUHost(&uhostConfigCopy, 1)
 	if err != nil {
