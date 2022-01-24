@@ -23,7 +23,7 @@ The Process about:
   - Create UHost By the private ip and UHost Config (Default: Shared Outstanding UHost).
   - Waiting for UHost Running.
   - Repeat the previous step.
-  - [Option] use the `dry-run` flag to validate UHost Config and Cube config.
+  - [Option/Recommend] use the `dry-run` flag to validate UHost Config and Cube config.
     - if set true which means that only try to create one temporary UHost with "Dynamic" `charge_type` to validate `uhost_config`, waiting for UHost running and then delete it.
     - for example:`migrate private-ip --conf xxx --dry-run` 
 
@@ -192,7 +192,21 @@ You may refer to the [API Docs](https://docs.ucloud.cn/api):
 * `project_id` - (Required) This is the UCloud project id. It must be provided, but
   it can also be sourced from the `UCLOUD_PROJECT_ID` environment variables.
 
+* `migrate_eip`- (Required when use cmd `migrate eip`) See [migrate_eip](#migrate_eip) below for details on attributes.
+* `migrate_ulb`- (Required when use cmd `migrate ulb`) See [migrate_ulb](#migrate_ulb) below for details on attributes.
 * `migrate_private_ip`- (Required when use cmd `migrate private-ip`) See [migrate_private_ip](#migrate_private_ip) below for details on attributes.
+
+#### migrate_eip
+
+* `uhost_config` - (Required) See [uhost_config](#uhost_config) below for details on attributes.
+* `cube_config` - (Required) See [cube_config](#cube_config) below for details on attributes.
+* `service_validation` - (Optional) See [service_validation](#service_validation) below for details on attributes.
+
+#### migrate_ulb
+
+* `ulb_id` - (Required) The id of ulb instance.
+* `uhost_config` - (Required) See [uhost_config](#uhost_config) below for details on attributes.
+* `service_validation` - (Optional) See [service_validation](#service_validation) below for details on attributes.
 
 #### migrate_private_ip
 
@@ -201,48 +215,56 @@ You may refer to the [API Docs](https://docs.ucloud.cn/api):
 
 #### cube_config
 
-* `cube_id_list` - (Optional, Array)
+* `cube_id_list` - (Optional, Array) The cube id list.
 * `cube_id_filter` - (Optional) See [cube_id_filter](#cube_id_filter) below for details on attributes.
 
 #### cube_id_filter
 
-* `zone`
-* `vpc_id`
-* `subnet_id`
-* `group`
-* `deployment_id`
-* `name_regex`
+* `zone` - (Optional) Availability zone where Cube instance is located. such as: `cn-bj2-02`. You may refer to [list of availability zone](https://docs.ucloud.cn/api/summary/regionlist)
+* `image_id` - (Required) The ID for the image to use for the instance.
+* `vpc_id` - (Optional) The ID of VPC linked to the cube instance.
+* `subnet_id` - (Optional) The ID of subnet linked to the cube instance.
+* `group` - (Optional) The group of cube instance.
+* `deployment_id` - (Optional) The deployment ID of the cube instance.
+* `name_regex` - (Optional) The regex string to filter resulting cube by name.
 
 #### uhost_config
 
-* `zone` - (Required)
+* `zone` - (Required) Availability zone where UHost instance is located. such as: `cn-bj2-02`. You may refer to [list of availability zone](https://docs.ucloud.cn/api/summary/regionlist)
 * `disks` - (Required, Array) See [disks](#disks) below for details on attributes.
-* `password` - (Required)
-* `image_id` - (Optional)
-* `image_id_filter` - (Optional) See [image_id_filter](#image_id_filter) below for details on attributes.
-* `name` - (Optional)
-* `name_prefix` - (Optional)
-* `charge_type` - (Optional)
-* `duration` - (Optional)
-* `cpu` - (Optional)
-* `memory` - (Optional)
-* `tag` - (Optional)
-* `minimal_cpu_platform` - (Optional)
-* `machine_type` - (Optional)
-* `security_group_id` - (Optional)
+* `password` - (Required) The password for the instance, which contains 8-30 characters, and at least 2 items of capital letters, lower case letters, numbers and special characters. The special characters include <code>`()~!@#$%^&*-+=_|{}\[]:;'<>,.?/</code>. If not specified, terraform will auto-generate a password.
+* `image_id` - (Optional) The ID for the image to use for the UHost instance.(must set one of `image_id` and `image_id_fiter`)
+* `image_id_filter` - (Optional) See [image_id_filter](#image_id_filter) below for details on attributes. 
+* `name` - (Optional) The name of UHost instance, which contains 1-63 characters and only support Chinese, English, numbers, '-', '_', '.'.
+* `name_prefix` - (Optional) The name prefix of UHost instance. If not specified one of `name` and `name_prefix`, this tool will auto-generate a name beginning with `uhost-instance`.
+* `charge_type` - (Optional) The charge type of UHost instance, possible values are: `Year`, `Month` and `Dynamic` as pay by hour (specific permission required). (Default: `Month`).
+* `duration` - (Optional) The duration that you will buy the instance (Default: `1`). The value is `0` when pay by month and the instance will be valid till the last day of that month. It is not required when `Dynamic` (pay by hour).
+* `cpu` - (Optional) The CPU of UHost Instance.(1-64, Default: `1`)
+* `memory` - (Optional) The Memory of UHost Instance.(1024-262144, Default: `1024`)
+* `tag` - (Optional) A tag assigned to instance, which contains at most 63 characters and only support Chinese, English, numbers, '-', '_', and '.'. If it is not filled in or a empty string is filled in, then default tag will be assigned. (Default: `Default`).
+* `minimal_cpu_platform` - (Optional) Specifies a minimum CPU platform for the VM instance. (Default: `Amd/Auto`). You may refer to [min_cpu_platform](https://docs.ucloud.cn/uhost/introduction/uhost/type_new)
+* `machine_type` - (Optional) The Machine type of UHost instance.(Default: `OM`)
+* `security_group_id` - (Optional) The ID of the associated firewall.
+* `vpc_id`- (Optional) The ID of VPC linked to the UHost instance.(can not use for cmd `migrate private-ip`)
+* `subenet_id`- (Optional) The ID of subnet linked to the UHost instance.(can not use for cmd `migrate private-ip`)
 
 #### disks
 
-* `is_boot` - (Required)
-* `size` - (Required)
-* `type` - (Required)
+* `is_boot` - (Required) The string value to set the disk is or not boot system disk. `True` means boot system disk, `False` means data disk.
+* `size` - (Required) The size of the data disk, range 20-8000, measured in GB (GigaByte).
+* `type` - (Required) The type of disk, you may refer to [disk_type](https://docs.ucloud.cn/api/uhost-api/disk_type).
 
 #### image_id_filter
 
-* `os_type` - (Optional)
-* `image_type` - (Optional)
-* `most_recent` - (Optional)
-* `name_regex` - (Optional)
+* `os_type` - (Optional) The type of OS. Possible values are: `Linux` and `Windows`, all the OS types will be retrieved by default.
+* `image_type` - (Optional) The type of image. Possible values are: `Base` as standard image, `Business` as owned by marketplace, and `Custom` as custom-image, all the image types will be retrieved by default.
+* `most_recent` - (Optional) If more than one result is returned, use the most recent image.
+* `name_regex` - (Optional) A regex string to filter resulting images by name. (Such as: `^CentOS 8.[2-3] 64` means CentOS 8.2 of 64-bit operating system or CentOS 8.3 of 64-bit operating system).
+
+#### service_validation
+
+* `Port` - (Required for cmd `migrate eip`) This field only for cmd `migrate eip`.
+* `WaitServiceReadyTimeout` - (Required) The time limit for wait service ready.(Default: `120` time second)
 
 ## Warning
 

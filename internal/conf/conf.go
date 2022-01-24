@@ -44,13 +44,6 @@ type MigratePrivateIp struct {
 	CubeConfig  *CubeConfig  `json:"cube_config" validate:"required"`
 }
 
-type ULBIdFilter struct {
-	VPCId      string `json:"vpc_id"`
-	SubnetId   string `json:"subnet_id"`
-	BusinessId string `json:"business_id"`
-	NameRegex  string `json:"name_regex"`
-}
-
 type CubeConfig struct {
 	CubeIdList   []string      `json:"cube_id_list"`
 	CubeIdFilter *CubeIdFilter `json:"cube_id_filter"`
