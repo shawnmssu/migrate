@@ -190,11 +190,22 @@ You may refer to the [API Docs](https://docs.ucloud.cn/api):
   it can also be sourced from the `UCLOUD_REGION` environment variables.
 
 * `project_id` - (Required) This is the UCloud project id. It must be provided, but
-  it can also be sourced from the `UCLOUD_PROJECT_ID` environment variables.
+  it can also be sourced from the `UCLOUD_PROJECT_ID` environment variables. 
 
 * `migrate_eip`- (Required when use cmd `migrate eip`) See [migrate_eip](#migrate_eip) below for details on attributes.
+
 * `migrate_ulb`- (Required when use cmd `migrate ulb`) See [migrate_ulb](#migrate_ulb) below for details on attributes.
+
 * `migrate_private_ip`- (Required when use cmd `migrate private-ip`) See [migrate_private_ip](#migrate_private_ip) below for details on attributes.
+
+* `log` - (Optional) See [log](#log) below for details on attributes.(Default: Stdout)
+
+#### log
+
+* `is_stdout` - (Optional) This bool value to control is or not print log to Stdout.(Default: `false`)
+* `dir` - (Optional) Set the dir of log file located for not Stdout. (Default: `./build`)
+* `name` - (Optional) Set the log file name for not Stdout. (Default: `migrate`)
+* `level` - (Optional) Set the log level, Possible values are: `DEBUG`, `INFO`, `WARN`, `ERROR`. (Default: `DEBUG`)
 
 #### migrate_eip
 
