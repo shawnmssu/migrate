@@ -226,13 +226,12 @@ You may refer to the [API Docs](https://docs.ucloud.cn/api):
 
 #### cube_config
 
-* `cube_id_list` - (Optional, Array) The cube id list.
+* `cube_id_list` - (Optional, Array) The cube id list(must set one of `cube_id_list` and `cube_id_filter`).
 * `cube_id_filter` - (Optional) See [cube_id_filter](#cube_id_filter) below for details on attributes.
 
 #### cube_id_filter
 
 * `zone` - (Optional) Availability zone where Cube instance is located. such as: `cn-bj2-02`. You may refer to [list of availability zone](https://docs.ucloud.cn/api/summary/regionlist)
-* `image_id` - (Required) The ID for the image to use for the instance.
 * `vpc_id` - (Optional) The ID of VPC linked to the cube instance.
 * `subnet_id` - (Optional) The ID of subnet linked to the cube instance.
 * `group` - (Optional) The group of cube instance.
